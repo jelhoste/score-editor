@@ -104,28 +104,6 @@
       padding: 0;
     }
 
-    /* Expand icon */
-    .expand-icon {
-      width: 14px;
-      height: 14px;
-      position: relative;
-      opacity: 0.7;
-      cursor: pointer;
-    }
-
-    .expand-icon span {
-      position: absolute;
-      width: 5px;
-      height: 5px;
-      border: 1.5px solid #c4c5c7;
-      background: transparent;
-    }
-
-    .expand-icon span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
-    .expand-icon span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
-    .expand-icon span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
-    .expand-icon span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
-
     /* Keyboard */
     .keyboard {
       position: relative;
@@ -565,22 +543,7 @@
       display: block;
     }
 
-    /* Fullscreen */
-    .piano-container:fullscreen,
-    .piano-container:-webkit-full-screen {
-      width: 100%;
-      height: 100%;
-      border-radius: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .piano-container:fullscreen .keyboard,
-    .piano-container:-webkit-full-screen .keyboard {
-      flex: 1;
-      height: auto;
-    }
-  </style>
+    </style>
 </head>
 <body>
   <div class="piano-container" id="piano">
@@ -591,9 +554,6 @@
       <div class="play-labels" id="play-labels"></div>
       <div class="top-right">
         <button class="color-swatch-btn" id="color-btn" title="Couleur des notes"></button>
-        <div class="expand-icon" id="fullscreen-btn" title="Plein écran">
-          <span></span><span></span><span></span><span></span>
-        </div>
       </div>
     </div>
 
@@ -1403,15 +1363,6 @@
     });
 
     setFrameColor(CADRE_DEFAULT);
-
-    // Fullscreen
-    document.getElementById('fullscreen-btn').addEventListener('click', function() {
-      if (!document.fullscreenElement) {
-        (piano.requestFullscreen && piano.requestFullscreen()) || (piano.webkitRequestFullscreen && piano.webkitRequestFullscreen());
-      } else {
-        (document.exitFullscreen && document.exitFullscreen()) || (document.webkitExitFullscreen && document.webkitExitFullscreen());
-      }
-    });
 
     // Export documentation API
     document.getElementById('btn-api').addEventListener('click', function() {
