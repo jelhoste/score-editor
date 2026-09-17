@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Piano Keyboard</title>
+  <!-- v2026-09-17-lazy-wheels -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #e0e0e0;
+    }
+
+    .piano-container {
+      --base-color: #b1915e;
+      --white-rest: #cdc9c6;
+      --white-rest-top: #d5d1ce;
+      --white-rest-bot: #c5c1be;
+      --black-rest-top: #3a3a3a;
+      --black-rest-mid: #2a2a2a;
+      --black-rest-bot: #181818;
+      --key-name-color: #555555;
+      --note-name-color: #c4c5c7;
+      --frame-color: #252628;
+      width: min(95vw, 920px);
+      background: var(--frame-color);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      user-select: none;
+    }
+
+    /* Top bar */
+    .top-bar {
+      height: 34px;
+      background: var(--frame-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      position: relative;
+      gap: 8px;
+    }
+
+    .top-bar::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #1a1b1d;
+    }
+
+    .top-left, .top-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2b2d;
+      border: 1px solid #3a3b3d;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #ccc;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: #3a3b3d;
+      color: #fff;
+    }
+
+    /* Color swatch (opens wheel) */
+    .color-swatch-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--base-color);
+      border: 1.5px solid #666;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* Expand icon */
+    .expand-icon {
+      width: 14px;
+      height: 14px;
+      position: relative;
+      opacity: 0.7;
+      cursor: pointer;
+    }
+
+    .expand-icon span {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border: 1.5px solid #c4c5c7;
+      background: transparent;
+    }
+
+    .expand-icon span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .expand-icon span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
+    .expand-icon span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
+    .expand-icon span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+    /* Keyboard */
+    .keyboard {
+      position: relative;
+      height: 135px; /* -10% vs 150px : raccourcit la zone 100% blanche */
+      background: var(--frame-color);
+      padding: 0 4px 4px 4px;
+    }
+
+    .white-keys {
+      display: flex;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .white-key {
+      flex: 1;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--white-rest-top) 0%, var(--white-rest) 40%, var(--white-rest-bot) 100%);
+      border: 1px solid #3a3836;
+      border-top: none;
+      border-radius: 0 0 3px 3px;
+      position: relative;
+      box-shadow:
+        inset 0 -2px 0 rgba(0, 0, 0, 0.1),
+        inset 1px 0 0 rgba(255, 255, 255, 0.2),
+        inset -1px 0 0 rgba(0, 0, 0, 0.08);
+      margin-right: -1px;
+      cursor: pointer;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: none;
+    }
+
+    .white-key:last-child {
+      margin-right: 0;
+    }
+
+    .white-key:focus,
+    .white-key:active {
+      outline: none;
+    }
+
+    .white-key.active {
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--base-color) 85%, white) 0%,
+        var(--base-color) 45%,
+        color-mix(in srgb, var(--base-color) 75%, black) 100%
+      ) !important;
+      border-color: color-mix(in srgb, var(--base-color) 50%, black);
+      box-shadow:
+        inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+        inset 1px 0 0 color-mix(in srgb, var(--base-color) 40%, white),
+        inset -1px 0 0 rgba(0, 0, 0, 0.12);
+    }
+
+    /* Permanent C markers – centrés sur la largeur visible (partie non couverte par la noire) */
+    .key-name {
+      position: absolute;
+      top: 5px;
+      /* ~34% : centre de la zone visible de C (noire C# couvre ~à partir de 65-70%) */
+      left: 34%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--key-name-color);
+      pointer-events: none;
+      letter-spacing: 0;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .white-key.active .key-name {
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    }
+
+    /* Noms des notes jouées – dans la barre du haut, un par touche active */
+    .play-labels {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .play-label-item {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--note-name-color);
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* Black keys */
+    .black-keys {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      /* ~83px : même hauteur absolue qu’avant (55% de 150px) */
+      height: 83px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .black-key {
+      position: absolute;
+      width: 11px;
+      height: 100%;
+      background: linear-gradient(
+        to bottom,
+        var(--black-rest-top) 0%,
+        var(--black-rest-mid) 40%,
+        var(--black-rest-bot) 100%
+      );
+      border-radius: 0 0 2px 2px;
+      border-left: 1px solid #1a1a1a;
+      border-right: none;
+      box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.5),
+        inset 1px 0 0 rgba(255, 255, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset -1px 0 0 rgba(0, 0, 0, 0.08),
+        inset 0 -5px 0 rgba(0, 0, 0, 0.65),
+        inset 0 -7px 2px rgba(0, 0, 0, 0.3);
+      pointer-events: auto;
+      cursor: pointer;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: none;
+    }
+
+    .black-key:focus,
+    .black-key:active {
+      outline: none;
+    }
+
+    .black-key.active {
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--base-color) 90%, white) 0%,
+        color-mix(in srgb, var(--base-color) 80%, white) 15%,
+        var(--base-color) 40%,
+        color-mix(in srgb, var(--base-color) 80%, black) 75%,
+        color-mix(in srgb, var(--base-color) 65%, black) 100%
+      ) !important;
+      border-left: 1px solid color-mix(in srgb, var(--base-color) 40%, black);
+      border-right: none;
+      box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.45),
+        inset 1px 0 0 color-mix(in srgb, var(--base-color) 50%, white),
+        inset 0 1px 0 color-mix(in srgb, var(--base-color) 35%, white),
+        inset -1px 0 0 color-mix(in srgb, var(--base-color) 10%, black),
+        inset 0 -5px 0 color-mix(in srgb, var(--base-color) 35%, black),
+        inset 0 -7px 2px rgba(40, 28, 10, 0.4);
+    }
+
+    /* ===== Modal : nombre de touches ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #2a2b2d;
+      border: 1px solid #3a3b3d;
+      border-radius: 10px;
+      padding: 16px 18px;
+      min-width: 240px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .modal h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ddd;
+      margin-bottom: 12px;
+    }
+
+    .modal-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .modal-row label {
+      font-size: 12px;
+      color: #aaa;
+      min-width: 50px;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #1e1f21;
+      border-radius: 4px;
+      padding: 2px 4px;
+      border: 1px solid #333;
+    }
+
+    .stepper button {
+      background: #333;
+      border: none;
+      color: #ccc;
+      width: 22px;
+      height: 22px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .stepper button:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .stepper input {
+      width: 40px;
+      background: transparent;
+      border: none;
+      color: #e0e0e0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      outline: none;
+    }
+
+    .presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .presets button {
+      background: #1e1f21;
+      border: 1px solid #3a3b3d;
+      color: #aaa;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .presets button:hover,
+    .presets button.active {
+      background: #3a3b3d;
+      color: #fff;
+      border-color: #555;
+    }
+
+    .modal-close {
+      margin-top: 14px;
+      width: 100%;
+      padding: 6px;
+      background: #3a3b3d;
+      border: none;
+      border-radius: 4px;
+      color: #ddd;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      background: #4a4b4d;
+    }
+
+    /* ===== Color wheel modal ===== */
+    .color-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 110;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .color-overlay.open {
+      display: flex;
+    }
+
+    .color-modal {
+      background: #2a2b2d;
+      border: 1px solid #3a3b3d;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .color-modal h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #ccc;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .wheel-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 12px;
+    }
+
+    #color-wheel {
+      display: block;
+      border-radius: 50%;
+      cursor: crosshair;
+    }
+
+    .hue-knob {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      background: transparent;
+    }
+
+    .color-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid #555;
+    }
+
+    #hue-label {
+      font-size: 13px;
+      color: #bbb;
+      min-width: 36px;
+    }
+
+    .reset-btn {
+      display: block;
+      width: 100%;
+      padding: 7px;
+      margin-bottom: 8px;
+      background: #1e1f21;
+      border: 1px solid #4a4b4d;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .reset-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .color-modal .modal-close {
+      margin-top: 0;
+    }
+
+    /* Repos modal */
+    .repos-presets {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .repos-presets button {
+      background: #1e1f21;
+      border: 1px solid #3a3b3d;
+      color: #aaa;
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .repos-presets button:hover {
+      background: #3a3b3d;
+      color: #fff;
+    }
+
+    .repos-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #3a3b3d;
+    }
+
+    .repos-tab {
+      flex: 1;
+      padding: 7px;
+      background: #1e1f21;
+      border: none;
+      color: #888;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .repos-tab.active {
+      background: #3a3b3d;
+      color: #fff;
+    }
+
+    .repos-pane {
+      display: none;
+    }
+
+    .repos-pane.active {
+      display: block;
+    }
+
+    /* Fullscreen */
+    .piano-container:fullscreen,
+    .piano-container:-webkit-full-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .piano-container:fullscreen .keyboard,
+    .piano-container:-webkit-full-screen .keyboard {
+      flex: 1;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="piano-container" id="piano">
+    <div class="top-bar">
+      <div class="top-left">
+        <button class="icon-btn" id="keys-btn" title="Nombre de touches">⌨</button>
+      </div>
+      <div class="play-labels" id="play-labels"></div>
+      <div class="top-right">
+        <button class="color-swatch-btn" id="color-btn" title="Couleur des notes"></button>
+        <div class="expand-icon" id="fullscreen-btn" title="Plein écran">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="keyboard" id="keyboard">
+      <div class="white-keys" id="white-keys"></div>
+      <div class="black-keys" id="black-keys"></div>
+    </div>
+  </div>
+
+  <!-- Modal nombre de touches -->
+  <div class="modal-overlay" id="keys-modal">
+    <div class="modal">
+      <h3>Nombre de touches</h3>
+      <div class="modal-row">
+        <label>Total</label>
+        <div class="stepper">
+          <button type="button" id="keys-minus">−</button>
+          <input type="text" id="keys-count" value="25" maxlength="2">
+          <button type="button" id="keys-plus">+</button>
+        </div>
+      </div>
+      <div class="presets">
+        <button type="button" data-keys="49">49</button>
+        <button type="button" data-keys="61">61</button>
+        <button type="button" data-keys="76">76</button>
+        <button type="button" data-keys="88">88</button>
+      </div>
+      <button class="modal-close" id="keys-close">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal roue de couleur -->
+  <div class="color-overlay" id="color-modal">
+    <div class="color-modal">
+      <h3>COULEUR DES TOUCHES ACTIVES</h3>
+      <div class="wheel-wrap">
+        <canvas id="color-wheel" width="200" height="200"></canvas>
+        <div class="hue-knob" id="hue-knob"></div>
+      </div>
+      <div class="color-info">
+        <div class="color-preview" id="color-preview"></div>
+        <span id="hue-label">0°</span>
+      </div>
+      <button type="button" class="reset-btn" id="color-reset">Réinitialiser (doré)</button>
+      <button type="button" class="reset-btn" id="btn-repos">Repos…</button>
+      <button type="button" class="reset-btn" id="btn-nom-note">Nom note…</button>
+      <button type="button" class="reset-btn" id="btn-cadre">Cadre…</button>
+      <button type="button" class="reset-btn" id="btn-api">API</button>
+      <button class="modal-close" id="color-close">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal couleurs au repos -->
+  <div class="color-overlay" id="repos-modal">
+    <div class="color-modal repos-modal">
+      <h3>COULEUR AU REPOS</h3>
+
+      <div class="repos-presets">
+        <button type="button" data-preset="pflaume" title="Prunier / Ébène — UHT 9209">Prunier</button>
+        <button type="button" data-preset="grenadill" title="Grenadill / Érable — UHT 13M1">Grenadill</button>
+        <button type="button" data-preset="kirsche" title="Ébène / Cerisier — UHT 2K02">Cerisier</button>
+        <button type="button" data-preset="palisander" title="Prunier / Palissandre — UHT 9R09">Palissandre</button>
+        <button type="button" data-preset="reset" title="Couleurs d’origine">Reset</button>
+      </div>
+
+      <div class="repos-tabs">
+        <button type="button" class="repos-tab active" data-tab="marches">Marches</button>
+        <button type="button" class="repos-tab" data-tab="feintes">Feintes</button>
+      </div>
+
+      <div class="repos-pane active" id="pane-marches">
+        <div class="wheel-wrap">
+          <canvas id="wheel-marches" width="200" height="200"></canvas>
+          <div class="hue-knob" id="knob-marches"></div>
+        </div>
+        <div class="color-info">
+          <div class="color-preview" id="preview-marches"></div>
+          <span id="label-marches">—</span>
+        </div>
+      </div>
+
+      <div class="repos-pane" id="pane-feintes">
+        <div class="wheel-wrap">
+          <canvas id="wheel-feintes" width="200" height="200"></canvas>
+          <div class="hue-knob" id="knob-feintes"></div>
+        </div>
+        <div class="color-info">
+          <div class="color-preview" id="preview-feintes"></div>
+          <span id="label-feintes">—</span>
+        </div>
+      </div>
+
+      <button class="modal-close" id="repos-close">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal couleur nom des notes -->
+  <div class="color-overlay" id="nom-modal">
+    <div class="color-modal">
+      <h3>COULEUR DU NOM DES NOTES</h3>
+      <div class="wheel-wrap">
+        <canvas id="wheel-nom" width="200" height="200"></canvas>
+        <div class="hue-knob" id="knob-nom"></div>
+      </div>
+      <div class="color-info">
+        <div class="color-preview" id="preview-nom"></div>
+        <span id="label-nom">gris</span>
+      </div>
+      <button type="button" class="reset-btn" id="nom-reset">Réinitialiser (gris clair)</button>
+      <button class="modal-close" id="nom-close">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal couleur du cadre -->
+  <div class="color-overlay" id="cadre-modal">
+    <div class="color-modal">
+      <h3>COULEUR DU CADRE</h3>
+      <div class="wheel-wrap">
+        <canvas id="wheel-cadre" width="200" height="200"></canvas>
+        <div class="hue-knob" id="knob-cadre"></div>
+      </div>
+      <div class="color-info">
+        <div class="color-preview" id="preview-cadre"></div>
+        <span id="label-cadre">défaut</span>
+      </div>
+      <button type="button" class="reset-btn" id="cadre-reset">Réinitialiser</button>
+      <button class="modal-close" id="cadre-close">Fermer</button>
+    </div>
+  </div>
+
+  <script>
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const IS_BLACK = [false, true, false, true, false, false, true, false, true, false, true, false];
+
+    const PRESET_START = {
+      49: 36, // C2
+      61: 36, // C2
+      76: 28, // E1
+      88: 21  // A0
+    };
+
+    let startMidi = 36;
+    let totalKeys = 25;
+    let baseColor = '#b1915e';
+
+    const whiteKeysEl = document.getElementById('white-keys');
+    const blackKeysEl = document.getElementById('black-keys');
+    const keysCountInput = document.getElementById('keys-count');
+    const piano = document.getElementById('piano');
+    const colorBtn = document.getElementById('color-btn');
+    const colorPreview = document.getElementById('color-preview');
+
+    function midiToName(midi) {
+      const name = NOTE_NAMES[midi % 12];
+      const octave = Math.floor(midi / 12) - 1;
+      return name + octave;
+    }
+
+    function buildKeyboard(numKeys, start) {
+      startMidi = start;
+      totalKeys = numKeys;
+
+      const notes = [];
+      for (let i = 0; i < numKeys; i++) notes.push(start + i);
+
+      const whites = notes.filter(m => !IS_BLACK[m % 12]);
+      const blacks = notes.filter(m => IS_BLACK[m % 12]);
+
+      whiteKeysEl.innerHTML = '';
+      blackKeysEl.innerHTML = '';
+
+      whites.forEach(midi => {
+        const el = document.createElement('div');
+        el.className = 'white-key';
+        el.dataset.midi = midi;
+        // Uniquement les Do (C) en repère permanent, centrés sur largeur visible
+        if (midi % 12 === 0) {
+          el.innerHTML = '<span class="key-name">' + midiToName(midi) + '</span>';
+        }
+        el.addEventListener('pointerdown', onKeyDown);
+        el.addEventListener('pointerup', onKeyUp);
+        el.addEventListener('pointercancel', onKeyUp);
+        el.addEventListener('lostpointercapture', onKeyUp);
+        whiteKeysEl.appendChild(el);
+      });
+
+      const whiteCount = whites.length;
+      const whiteWidthPct = 100 / whiteCount;
+
+      blacks.forEach(midi => {
+        const whitesBefore = notes.filter(m => m < midi && !IS_BLACK[m % 12]).length;
+        const leftPct = (whitesBefore - 0.32) * whiteWidthPct;
+
+        const el = document.createElement('div');
+        el.className = 'black-key';
+        el.dataset.midi = midi;
+        el.style.left = leftPct + '%';
+        el.style.width = (whiteWidthPct * 0.52) + '%';
+        el.addEventListener('pointerdown', onKeyDown);
+        el.addEventListener('pointerup', onKeyUp);
+        el.addEventListener('pointercancel', onKeyUp);
+        el.addEventListener('lostpointercapture', onKeyUp);
+        blackKeysEl.appendChild(el);
+      });
+
+      keysCountInput.value = numKeys;
+      document.querySelectorAll('.presets button').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.keys) === numKeys);
+      });
+    }
+
+    const playLabels = document.getElementById('play-labels');
+    const topBar = document.querySelector('.top-bar');
+    // Map midi -> label element (pour polyphonie)
+    const activeLabels = new Map();
+
+    function showNoteLabel(keyEl) {
+      var midi = parseInt(keyEl.dataset.midi);
+      if (activeLabels.has(midi)) return;
+
+      var label = document.createElement('span');
+      label.className = 'play-label-item';
+      label.textContent = midiToName(midi);
+      label.dataset.midi = midi;
+
+      var keyRect = keyEl.getBoundingClientRect();
+      var barRect = topBar.getBoundingClientRect();
+      var centerX = keyRect.left + keyRect.width / 2 - barRect.left;
+      label.style.left = centerX + 'px';
+
+      playLabels.appendChild(label);
+      activeLabels.set(midi, label);
+    }
+
+    function hideNoteLabel(keyEl) {
+      var midi = parseInt(keyEl.dataset.midi);
+      var label = activeLabels.get(midi);
+      if (label) {
+        label.remove();
+        activeLabels.delete(midi);
+      }
+    }
+
+    function onKeyDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Capture pointer pour que pointerup arrive même si on sort de la touche
+      if (e.pointerId != null) {
+        try { this.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      this.classList.add('active');
+      showNoteLabel(this);
+    }
+
+    function onKeyUp(e) {
+      this.classList.remove('active');
+      hideNoteLabel(this);
+    }
+
+    // ===== Keys modal =====
+    const keysModal = document.getElementById('keys-modal');
+    document.getElementById('keys-btn').addEventListener('click', function() {
+      keysModal.classList.add('open');
+    });
+    document.getElementById('keys-close').addEventListener('click', function() {
+      keysModal.classList.remove('open');
+    });
+    keysModal.addEventListener('click', function(e) {
+      if (e.target === keysModal) keysModal.classList.remove('open');
+    });
+
+    document.getElementById('keys-minus').addEventListener('click', function() {
+      var n = Math.max(12, (parseInt(keysCountInput.value) || 25) - 1);
+      buildKeyboard(n, startMidi);
+    });
+    document.getElementById('keys-plus').addEventListener('click', function() {
+      var n = Math.min(88, (parseInt(keysCountInput.value) || 25) + 1);
+      buildKeyboard(n, startMidi);
+    });
+    keysCountInput.addEventListener('change', function() {
+      var n = Math.max(12, Math.min(88, parseInt(keysCountInput.value) || 25));
+      buildKeyboard(n, startMidi);
+    });
+    document.querySelectorAll('.presets button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var n = parseInt(btn.dataset.keys);
+        buildKeyboard(n, PRESET_START[n] || 36);
+      });
+    });
+
+    // ===== Color wheel (anneau pastel) =====
+    const GOLD = '#b1915e';
+    const colorModal = document.getElementById('color-modal');
+    const canvas = document.getElementById('color-wheel');
+    const ctx = canvas.getContext('2d');
+    const hueKnob = document.getElementById('hue-knob');
+    const hueLabel = document.getElementById('hue-label');
+    const size = 200;
+    const cx = size / 2;
+    const cy = size / 2;
+    const outerR = size / 2 - 4;
+    const innerR = outerR - 28; // anneau
+    let currentHue = 38; // approx gold
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, size, size);
+      // Anneau de teintes pastel (sat ~55%, light ~62%)
+      for (var angle = 0; angle < 360; angle++) {
+        var start = (angle - 0.6) * Math.PI / 180;
+        var end = (angle + 0.6) * Math.PI / 180;
+        ctx.beginPath();
+        ctx.arc(cx, cy, (outerR + innerR) / 2, start, end);
+        ctx.lineWidth = outerR - innerR;
+        // Pastel : saturation modérée, luminosité élevée
+        ctx.strokeStyle = 'hsl(' + angle + ', 55%, 62%)';
+        ctx.stroke();
+      }
+      // Centre sombre
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR - 1, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1b1d';
+      ctx.fill();
+    }
+
+    // drawWheel() différé à l’ouverture de la modal (évite le freeze au chargement)
+    var activeWheelDrawn = false;
+
+    function hslToHex(h, s, l) {
+      s /= 100; l /= 100;
+      var a = s * Math.min(l, 1 - l);
+      function f(n) {
+        var k = (n + h / 30) % 12;
+        var color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+      }
+      return '#' + f(0) + f(8) + f(4);
+    }
+
+    function updateKnob(hue) {
+      currentHue = hue;
+      var rad = hue * Math.PI / 180;
+      var r = (outerR + innerR) / 2;
+      var x = cx + Math.cos(rad) * r;
+      var y = cy + Math.sin(rad) * r;
+      hueKnob.style.left = x + 'px';
+      hueKnob.style.top = y + 'px';
+      // Pastel color from hue
+      var color = hslToHex(hue, 55, 62);
+      setBaseColor(color);
+      hueLabel.textContent = Math.round(hue) + '°';
+    }
+
+    function pickFromEvent(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = size / rect.width;
+      var scaleY = size / rect.height;
+      var x = (e.clientX - rect.left) * scaleX;
+      var y = (e.clientY - rect.top) * scaleY;
+      var dx = x - cx;
+      var dy = y - cy;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      // Accepter un peu en dehors de l'anneau pour faciliter
+      if (dist < innerR - 10 || dist > outerR + 10) return;
+      var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      if (angle < 0) angle += 360;
+      updateKnob(angle);
+    }
+
+    function setBaseColor(color) {
+      baseColor = color;
+      piano.style.setProperty('--base-color', color);
+      colorBtn.style.background = color;
+      colorPreview.style.background = color;
+    }
+
+    canvas.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      pickFromEvent(e);
+      function move(ev) { pickFromEvent(ev); }
+      function up() {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      }
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+
+    colorBtn.addEventListener('click', function() {
+      if (!activeWheelDrawn) { drawWheel(); activeWheelDrawn = true; }
+      colorPreview.style.background = baseColor;
+      colorModal.classList.add('open');
+      updateKnob(currentHue);
+    });
+
+    document.getElementById('color-reset').addEventListener('click', function() {
+      setBaseColor(GOLD);
+      // Position approx pour le doré (~38°)
+      updateKnob(38);
+      // Forcer la couleur dorée exacte (pas le pastel calculé)
+      setBaseColor(GOLD);
+      colorPreview.style.background = GOLD;
+      hueLabel.textContent = 'doré';
+    });
+
+    document.getElementById('color-close').addEventListener('click', function() {
+      colorModal.classList.remove('open');
+    });
+    colorModal.addEventListener('click', function(e) {
+      if (e.target === colorModal) colorModal.classList.remove('open');
+    });
+
+    // ===== Couleurs au repos (marches / feintes) =====
+    const reposModal = document.getElementById('repos-modal');
+    const DEFAULT_WHITE = { top: '#d5d1ce', mid: '#cdc9c6', bot: '#c5c1be' };
+    const DEFAULT_BLACK = { top: '#3a3a3a', mid: '#2a2a2a', bot: '#181818' };
+
+    // Présélections inspirées des claviers d’orgue UHT
+    const REPOS_PRESETS = {
+      pflaume: {
+        // UHT 9209 — marches: prunier, feintes: ébène
+        white: { top: '#c9a57a', mid: '#b89268', bot: '#a67e55' },
+        black: { top: '#2a2a2a', mid: '#1a1a1a', bot: '#0c0c0c' }
+      },
+      grenadill: {
+        // UHT 13M1 — marches: grenadill (sombre), feintes: érable clair
+        white: { top: '#4a3428', mid: '#3a281c', bot: '#2a1c14' },
+        black: { top: '#f0e6d0', mid: '#e8dcc0', bot: '#d4c8a8' }
+      },
+      kirsche: {
+        // UHT 2K02 — marches: ébène, feintes: cerisier
+        white: { top: '#2c2c2c', mid: '#1e1e1e', bot: '#121212' },
+        black: { top: '#d4a060', mid: '#c48e4a', bot: '#a87838' }
+      },
+      palisander: {
+        // UHT 9R09 — marches: prunier, feintes: palissandre
+        white: { top: '#c9a070', mid: '#b88e5c', bot: '#a47a48' },
+        black: { top: '#6b3a28', mid: '#5a2e1e', bot: '#3e1e12' }
+      },
+      reset: {
+        white: DEFAULT_WHITE,
+        black: DEFAULT_BLACK
+      }
+    };
+
+    function hexLuminance(hex) {
+      var n = parseInt(hex.slice(1), 16);
+      var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    }
+
+    function applyWhiteRest(c) {
+      piano.style.setProperty('--white-rest-top', c.top);
+      piano.style.setProperty('--white-rest', c.mid);
+      piano.style.setProperty('--white-rest-bot', c.bot);
+      // Contraste des repères C selon la luminosité des marches
+      var lum = hexLuminance(c.mid);
+      piano.style.setProperty('--key-name-color', lum < 0.45 ? '#c8c8c8' : '#555555');
+      document.getElementById('preview-marches').style.background = c.mid;
+    }
+
+    function applyBlackRest(c) {
+      piano.style.setProperty('--black-rest-top', c.top);
+      piano.style.setProperty('--black-rest-mid', c.mid);
+      piano.style.setProperty('--black-rest-bot', c.bot);
+      document.getElementById('preview-feintes').style.background = c.mid;
+    }
+
+    function shadeHex(hex, percent) {
+      // percent > 0 = lighter, < 0 = darker
+      var n = parseInt(hex.slice(1), 16);
+      var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      r = Math.min(255, Math.max(0, Math.round(r + (percent / 100) * 255)));
+      g = Math.min(255, Math.max(0, Math.round(g + (percent / 100) * 255)));
+      b = Math.min(255, Math.max(0, Math.round(b + (percent / 100) * 255)));
+      return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    function setupReposWheel(canvasId, knobId, labelId, isWhite) {
+      var cnv = document.getElementById(canvasId);
+      var c = cnv.getContext('2d');
+      var knob = document.getElementById(knobId);
+      var labelEl = document.getElementById(labelId);
+      var sz = 200, cx0 = 100, cy0 = 100;
+      var oR = 96, iR = 68;
+      var hue = isWhite ? 40 : 30;
+
+      function draw() {
+        c.clearRect(0, 0, sz, sz);
+        for (var a = 0; a < 360; a++) {
+          c.beginPath();
+          c.arc(cx0, cy0, (oR + iR) / 2, (a - 0.6) * Math.PI / 180, (a + 0.6) * Math.PI / 180);
+          c.lineWidth = oR - iR;
+          // Pastel pour marches, un peu plus sombre pour feintes
+          c.strokeStyle = isWhite
+            ? 'hsl(' + a + ', 35%, 78%)'
+            : 'hsl(' + a + ', 25%, 28%)';
+          c.stroke();
+        }
+        c.beginPath();
+        c.arc(cx0, cy0, iR - 1, 0, Math.PI * 2);
+        c.fillStyle = '#1a1b1d';
+        c.fill();
+      }
+
+      function setHue(h) {
+        hue = h;
+        var rad = h * Math.PI / 180;
+        var r = (oR + iR) / 2;
+        knob.style.left = (cx0 + Math.cos(rad) * r) + 'px';
+        knob.style.top = (cy0 + Math.sin(rad) * r) + 'px';
+        var col = isWhite ? hslToHex(h, 35, 78) : hslToHex(h, 25, 28);
+        labelEl.textContent = Math.round(h) + '°';
+        if (isWhite) {
+          applyWhiteRest({ top: shadeHex(col, 8), mid: col, bot: shadeHex(col, -8) });
+        } else {
+          applyBlackRest({ top: shadeHex(col, 12), mid: col, bot: shadeHex(col, -12) });
+        }
+      }
+
+      function pick(e) {
+        var rect = cnv.getBoundingClientRect();
+        var scaleX = sz / rect.width, scaleY = sz / rect.height;
+        var x = (e.clientX - rect.left) * scaleX;
+        var y = (e.clientY - rect.top) * scaleY;
+        var dx = x - cx0, dy = y - cy0;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < iR - 10 || dist > oR + 10) return;
+        var ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (ang < 0) ang += 360;
+        setHue(ang);
+      }
+
+      cnv.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        pick(e);
+        function move(ev) { pick(ev); }
+        function up() {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+        }
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      });
+
+      return { setHue: setHue, draw: draw };
+    }
+
+    var wheelMarches = null;
+    var wheelFeintes = null;
+    var reposWheelsDrawn = false;
+
+    // Bouton Repos : ferme active, ouvre repos
+    document.getElementById('btn-repos').addEventListener('click', function() {
+      colorModal.classList.remove('open');
+      if (!reposWheelsDrawn) {
+        wheelMarches = setupReposWheel('wheel-marches', 'knob-marches', 'label-marches', true);
+        wheelFeintes = setupReposWheel('wheel-feintes', 'knob-feintes', 'label-feintes', false);
+        wheelMarches.draw();
+        wheelFeintes.draw();
+        reposWheelsDrawn = true;
+      }
+      reposModal.classList.add('open');
+    });
+
+    document.getElementById('repos-close').addEventListener('click', function() {
+      reposModal.classList.remove('open');
+    });
+    reposModal.addEventListener('click', function(e) {
+      if (e.target === reposModal) reposModal.classList.remove('open');
+    });
+
+    // Onglets
+    document.querySelectorAll('.repos-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.repos-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.repos-pane').forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Présélections
+    document.querySelectorAll('.repos-presets button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var p = REPOS_PRESETS[btn.dataset.preset];
+        if (!p) return;
+        applyWhiteRest(p.white);
+        applyBlackRest(p.black);
+        document.getElementById('label-marches').textContent = btn.dataset.preset === 'reset' ? 'défaut' : btn.textContent;
+        document.getElementById('label-feintes').textContent = btn.dataset.preset === 'reset' ? 'défaut' : btn.textContent;
+      });
+    });
+
+    // Init previews
+    applyWhiteRest(DEFAULT_WHITE);
+    applyBlackRest(DEFAULT_BLACK);
+
+    // ===== Couleur du nom des notes jouées =====
+    const NOM_DEFAULT = '#c4c5c7';
+    const nomModal = document.getElementById('nom-modal');
+    let noteNameColor = NOM_DEFAULT;
+
+    function setNoteNameColor(color) {
+      noteNameColor = color;
+      piano.style.setProperty('--note-name-color', color);
+      document.getElementById('preview-nom').style.background = color;
+    }
+
+    var nomWheelDrawn = false;
+    function ensureNomWheel() {
+      if (nomWheelDrawn) return;
+      nomWheelDrawn = true;
+      var cnv = document.getElementById('wheel-nom');
+      var c = cnv.getContext('2d');
+      var knob = document.getElementById('knob-nom');
+      var labelEl = document.getElementById('label-nom');
+      var sz = 200, cx0 = 100, cy0 = 100, oR = 96, iR = 68;
+
+      for (var a = 0; a < 360; a++) {
+        c.beginPath();
+        c.arc(cx0, cy0, (oR + iR) / 2, (a - 0.6) * Math.PI / 180, (a + 0.6) * Math.PI / 180);
+        c.lineWidth = oR - iR;
+        c.strokeStyle = 'hsl(' + a + ', 40%, 72%)';
+        c.stroke();
+      }
+      c.beginPath();
+      c.arc(cx0, cy0, iR - 1, 0, Math.PI * 2);
+      c.fillStyle = '#1a1b1d';
+      c.fill();
+
+      function setHue(h) {
+        var rad = h * Math.PI / 180;
+        var r = (oR + iR) / 2;
+        knob.style.left = (cx0 + Math.cos(rad) * r) + 'px';
+        knob.style.top = (cy0 + Math.sin(rad) * r) + 'px';
+        var col = hslToHex(h, 40, 72);
+        labelEl.textContent = Math.round(h) + '°';
+        setNoteNameColor(col);
+      }
+
+      function pick(e) {
+        var rect = cnv.getBoundingClientRect();
+        var scaleX = sz / rect.width, scaleY = sz / rect.height;
+        var x = (e.clientX - rect.left) * scaleX;
+        var y = (e.clientY - rect.top) * scaleY;
+        var dx = x - cx0, dy = y - cy0;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < iR - 10 || dist > oR + 10) return;
+        var ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (ang < 0) ang += 360;
+        setHue(ang);
+      }
+
+      cnv.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        pick(e);
+        function move(ev) { pick(ev); }
+        function up() {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+        }
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      });
+    }
+
+    document.getElementById('btn-nom-note').addEventListener('click', function() {
+      colorModal.classList.remove('open');
+      ensureNomWheel();
+      document.getElementById('preview-nom').style.background = noteNameColor;
+      nomModal.classList.add('open');
+    });
+
+    document.getElementById('nom-reset').addEventListener('click', function() {
+      setNoteNameColor(NOM_DEFAULT);
+      document.getElementById('label-nom').textContent = 'gris';
+    });
+
+    document.getElementById('nom-close').addEventListener('click', function() {
+      nomModal.classList.remove('open');
+    });
+    nomModal.addEventListener('click', function(e) {
+      if (e.target === nomModal) nomModal.classList.remove('open');
+    });
+
+    setNoteNameColor(NOM_DEFAULT);
+
+    // ===== Couleur du cadre (bandeau + encadrement) =====
+    const CADRE_DEFAULT = '#252628';
+    const cadreModal = document.getElementById('cadre-modal');
+    let frameColor = CADRE_DEFAULT;
+
+    function setFrameColor(color) {
+      frameColor = color;
+      piano.style.setProperty('--frame-color', color);
+      document.getElementById('preview-cadre').style.background = color;
+    }
+
+    var cadreWheelDrawn = false;
+    function ensureCadreWheel() {
+      if (cadreWheelDrawn) return;
+      cadreWheelDrawn = true;
+      var cnv = document.getElementById('wheel-cadre');
+      var c = cnv.getContext('2d');
+      var knob = document.getElementById('knob-cadre');
+      var labelEl = document.getElementById('label-cadre');
+      var sz = 200, cx0 = 100, cy0 = 100, oR = 96;
+
+      function hslParts(h, s, l) {
+        s /= 100; l /= 100;
+        var a = s * Math.min(l, 1 - l);
+        function f(n) {
+          var k = (n + h / 30) % 12;
+          return Math.round(255 * (l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)));
+        }
+        return [f(0), f(8), f(4)];
+      }
+
+      function colorAt(dist, ang) {
+        var t = dist / oR;
+        var s, l;
+        if (t < 0.5) {
+          s = t * 2 * 100;
+          l = 100 - t * 2 * 50;
+        } else {
+          s = 100;
+          l = 50 - (t - 0.5) * 2 * 50;
+        }
+        return hslToHex(ang, s, Math.max(0, Math.min(100, l)));
+      }
+
+      // ImageData (beaucoup plus rapide que fillRect pixel par pixel)
+      var img = c.createImageData(sz, sz);
+      var data = img.data;
+      for (var y = 0; y < sz; y++) {
+        for (var x = 0; x < sz; x++) {
+          var dx = x - cx0, dy = y - cy0;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          var i = (y * sz + x) * 4;
+          if (dist > oR) {
+            data[i + 3] = 0;
+            continue;
+          }
+          var ang = Math.atan2(dy, dx) * 180 / Math.PI;
+          if (ang < 0) ang += 360;
+          var t = dist / oR;
+          var s, l;
+          if (t < 0.5) { s = t * 2 * 100; l = 100 - t * 2 * 50; }
+          else { s = 100; l = 50 - (t - 0.5) * 2 * 50; }
+          var rgb = hslParts(ang, s, Math.max(0, Math.min(100, l)));
+          data[i] = rgb[0]; data[i + 1] = rgb[1]; data[i + 2] = rgb[2]; data[i + 3] = 255;
+        }
+      }
+      c.putImageData(img, 0, 0);
+
+      function pick(e) {
+        var rect = cnv.getBoundingClientRect();
+        var scaleX = sz / rect.width, scaleY = sz / rect.height;
+        var x = (e.clientX - rect.left) * scaleX;
+        var y = (e.clientY - rect.top) * scaleY;
+        var dx = x - cx0, dy = y - cy0;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > oR) {
+          var sc = oR / dist;
+          dx *= sc; dy *= sc;
+          dist = oR;
+          x = cx0 + dx; y = cy0 + dy;
+        }
+        var ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (ang < 0) ang += 360;
+        knob.style.left = x + 'px';
+        knob.style.top = y + 'px';
+        labelEl.textContent = Math.round(ang) + '°';
+        setFrameColor(colorAt(dist, ang));
+      }
+
+      cnv.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        pick(e);
+        function move(ev) { pick(ev); }
+        function up() {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+        }
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      });
+    }
+
+    document.getElementById('btn-cadre').addEventListener('click', function() {
+      colorModal.classList.remove('open');
+      ensureCadreWheel();
+      document.getElementById('preview-cadre').style.background = frameColor;
+      cadreModal.classList.add('open');
+    });
+
+    document.getElementById('cadre-reset').addEventListener('click', function() {
+      setFrameColor(CADRE_DEFAULT);
+      document.getElementById('label-cadre').textContent = 'défaut';
+    });
+
+    document.getElementById('cadre-close').addEventListener('click', function() {
+      cadreModal.classList.remove('open');
+    });
+    cadreModal.addEventListener('click', function(e) {
+      if (e.target === cadreModal) cadreModal.classList.remove('open');
+    });
+
+    setFrameColor(CADRE_DEFAULT);
+
+    // Fullscreen
+    document.getElementById('fullscreen-btn').addEventListener('click', function() {
+      if (!document.fullscreenElement) {
+        (piano.requestFullscreen && piano.requestFullscreen()) || (piano.webkitRequestFullscreen && piano.webkitRequestFullscreen());
+      } else {
+        (document.exitFullscreen && document.exitFullscreen()) || (document.webkitExitFullscreen && document.webkitExitFullscreen());
+      }
+    });
+
+    // Export documentation API
+    document.getElementById('btn-api').addEventListener('click', function() {
+      var doc =
+'================================================================================\n' +
+'  PIANO KEYBOARD — Documentation API\n' +
+'  Pilotage depuis la page hôte (aucune restriction de couleur)\n' +
+'================================================================================\n\n' +
+'Objet global : window.PianoKeyboard\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'COULEURS\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'1) Couleur des touches actives (quand on appuie)\n' +
+'   PianoKeyboard.setActiveColor(\'#ff6600\');\n\n' +
+'2) Couleur du texte des noms de notes (barre du haut)\n' +
+'   PianoKeyboard.setNoteNameColor(\'#c4c5c7\');\n\n' +
+'3) Couleur du cadre / bandeau (encadrement du module)\n' +
+'   PianoKeyboard.setFrameColor(\'#252628\');\n\n' +
+'4) Couleur des marches (touches blanches) au repos\n' +
+'   // Une seule couleur (dégradé auto) :\n' +
+'   PianoKeyboard.setWhiteRest(\'#e8dcc8\');\n' +
+'   // Ou dégradé explicite :\n' +
+'   PianoKeyboard.setWhiteRest({\n' +
+'     top: \'#f0e6d0\',\n' +
+'     mid: \'#e8dcc0\',\n' +
+'     bot: \'#d4c8a8\'\n' +
+'   });\n\n' +
+'5) Couleur des feintes (touches noires) au repos\n' +
+'   PianoKeyboard.setBlackRest(\'#1a1a1a\');\n' +
+'   PianoKeyboard.setBlackRest({\n' +
+'     top: \'#3a3a3a\',\n' +
+'     mid: \'#2a2a2a\',\n' +
+'     bot: \'#181818\'\n' +
+'   });\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'PRÉSÉLECTIONS COULEUR (repos marches + feintes)\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'6) Appliquer une présélection\n' +
+'   PianoKeyboard.setPreset(\'pflaume\');     // Prunier / Ébène (UHT 9209)\n' +
+'   PianoKeyboard.setPreset(\'grenadill\');   // Grenadill / Érable (UHT 13M1)\n' +
+'   PianoKeyboard.setPreset(\'kirsche\');     // Ébène / Cerisier (UHT 2K02)\n' +
+'   PianoKeyboard.setPreset(\'palisander\');  // Prunier / Palissandre (UHT 9R09)\n' +
+'   PianoKeyboard.setPreset(\'reset\');       // Couleurs d’origine\n\n' +
+'   // Liste des ids disponibles :\n' +
+'   PianoKeyboard.listPresets();\n' +
+'   // → [\'pflaume\', \'grenadill\', \'kirsche\', \'palisander\', \'reset\']\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'CLAVIER\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'7) Nombre de touches (12 à 88)\n' +
+'   PianoKeyboard.setKeys(61);\n' +
+'   // Avec note MIDI de départ (ex. 36 = C2) :\n' +
+'   PianoKeyboard.setKeys(61, 36);\n\n' +
+'   Présélections MIDI de départ usuelles :\n' +
+'     49 touches → départ 36 (C2)\n' +
+'     61 touches → départ 36 (C2)\n' +
+'     76 touches → départ 28 (E1)\n' +
+'     88 touches → départ 21 (A0)\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'LECTURE / ÉLÉMENT\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'8) Lire l’état actuel des couleurs\n' +
+'   const colors = PianoKeyboard.getColors();\n' +
+'   // → { active, noteName, frame, whiteRest:{top,mid,bot}, blackRest:{top,mid,bot} }\n\n' +
+'9) Élément DOM racine du module\n' +
+'   const el = PianoKeyboard.element;  // div#piano\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'VARIABLES CSS (alternative)\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'Vous pouvez aussi écrire directement sur l’élément #piano :\n\n' +
+'  const p = document.getElementById(\'piano\');\n' +
+'  p.style.setProperty(\'--base-color\', \'#ff6600\');      // touches actives\n' +
+'  p.style.setProperty(\'--frame-color\', \'#1a1a2e\');     // cadre\n' +
+'  p.style.setProperty(\'--note-name-color\', \'#eeeeee\'); // noms de notes\n' +
+'  p.style.setProperty(\'--white-rest\', \'#e8dcc8\');\n' +
+'  p.style.setProperty(\'--white-rest-top\', \'#f0e6d0\');\n' +
+'  p.style.setProperty(\'--white-rest-bot\', \'#d4c8a8\');\n' +
+'  p.style.setProperty(\'--black-rest-mid\', \'#1a1a1a\');\n' +
+'  p.style.setProperty(\'--black-rest-top\', \'#2a2a2a\');\n' +
+'  p.style.setProperty(\'--black-rest-bot\', \'#0c0c0c\');\n' +
+'  p.style.setProperty(\'--key-name-color\', \'#555555\');  // repères C2, C3…\n\n' +
+'--------------------------------------------------------------------------------\n' +
+'NOTES\n' +
+'--------------------------------------------------------------------------------\n\n' +
+'- Toutes les couleurs acceptent n’importe quel hex (#rgb ou #rrggbb).\n' +
+'- Aucune restriction de teinte côté API (les roues de l’UI restent\n' +
+'  optionnelles pour un réglage manuel dans le module).\n' +
+'- L’objet est disponible dès le chargement du script du module.\n\n' +
+'================================================================================\n';
+
+      var blob = new Blob([doc], { type: 'text/plain;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'piano-keyboard-API.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Init
+    setBaseColor(baseColor);
+    buildKeyboard(25, 36);
+
+    /**
+     * API publique — pilotage depuis la page hôte, sans restriction de couleur.
+     *
+     * Exemples :
+     *   PianoKeyboard.setActiveColor('#ff6600');
+     *   PianoKeyboard.setFrameColor('#1a1a2e');
+     *   PianoKeyboard.setNoteNameColor('#eeeeee');
+     *   PianoKeyboard.setWhiteRest('#e8dcc8');           // une seule couleur
+     *   PianoKeyboard.setWhiteRest({ top:'#f0e6d0', mid:'#e8dcc0', bot:'#d4c8a8' });
+     *   PianoKeyboard.setBlackRest('#1a1a1a');
+     *   PianoKeyboard.setKeys(61);                       // ou setKeys(61, 36)
+     *   PianoKeyboard.getColors();
+     */
+    function normalizeRestColor(input) {
+      if (!input) return null;
+      if (typeof input === 'string') {
+        return { top: shadeHex(input, 8), mid: input, bot: shadeHex(input, -8) };
+      }
+      if (input.mid || input.top) {
+        var mid = input.mid || input.top || input.bot;
+        return {
+          top: input.top || shadeHex(mid, 8),
+          mid: mid,
+          bot: input.bot || shadeHex(mid, -8)
+        };
+      }
+      return null;
+    }
+
+    window.PianoKeyboard = {
+      /** Couleur des touches actives (hex libre) */
+      setActiveColor: function(hex) {
+        if (!hex) return;
+        setBaseColor(hex);
+        if (typeof colorPreview !== 'undefined' && colorPreview) {
+          colorPreview.style.background = hex;
+        }
+      },
+      /** Couleur du texte des noms de notes jouées */
+      setNoteNameColor: function(hex) {
+        if (!hex) return;
+        setNoteNameColor(hex);
+      },
+      /** Couleur du cadre / bandeau */
+      setFrameColor: function(hex) {
+        if (!hex) return;
+        setFrameColor(hex);
+      },
+      /** Couleur des marches (touches blanches) au repos — string ou {top,mid,bot} */
+      setWhiteRest: function(input) {
+        var c = normalizeRestColor(input);
+        if (c) applyWhiteRest(c);
+      },
+      /** Couleur des feintes (touches noires) au repos — string ou {top,mid,bot} */
+      setBlackRest: function(input) {
+        var c = normalizeRestColor(input);
+        if (c) applyBlackRest(c);
+      },
+      /** Nombre de touches (+ optionnellement note MIDI de départ) */
+      setKeys: function(count, start) {
+        var n = Math.max(12, Math.min(88, parseInt(count) || 25));
+        var s = (start != null) ? parseInt(start) : startMidi;
+        buildKeyboard(n, s);
+      },
+      /**
+       * Présélection de couleurs au repos (marches + feintes).
+       * Ids : 'pflaume' | 'grenadill' | 'kirsche' | 'palisander' | 'reset'
+       */
+      setPreset: function(id) {
+        var p = REPOS_PRESETS[id];
+        if (!p) return false;
+        applyWhiteRest(p.white);
+        applyBlackRest(p.black);
+        return true;
+      },
+      /** Liste des ids de présélections disponibles */
+      listPresets: function() {
+        return Object.keys(REPOS_PRESETS);
+      },
+      /** Lecture de l’état des couleurs */
+      getColors: function() {
+        return {
+          active: baseColor,
+          noteName: noteNameColor,
+          frame: frameColor,
+          whiteRest: {
+            top: getComputedStyle(piano).getPropertyValue('--white-rest-top').trim(),
+            mid: getComputedStyle(piano).getPropertyValue('--white-rest').trim(),
+            bot: getComputedStyle(piano).getPropertyValue('--white-rest-bot').trim()
+          },
+          blackRest: {
+            top: getComputedStyle(piano).getPropertyValue('--black-rest-top').trim(),
+            mid: getComputedStyle(piano).getPropertyValue('--black-rest-mid').trim(),
+            bot: getComputedStyle(piano).getPropertyValue('--black-rest-bot').trim()
+          }
+        };
+      },
+      /** Élément racine du module */
+      element: piano
+    };
+  </script>
+</body>
+</html>
